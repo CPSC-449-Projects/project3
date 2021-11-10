@@ -8,4 +8,3 @@ sqlite-utils add-foreign-key ./var/users.db follows username users username
 sqlite-utils add-foreign-key ./var/users.db follows following users username
 
 sqlite-utils insert ./var/posts.db post --csv ./share/posts.csv --detect-types --pk=id
-sqlite-utils create-index ./var/posts.db post username text timestamp --unique

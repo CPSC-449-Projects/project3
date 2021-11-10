@@ -29,7 +29,7 @@ def log(name=__name__, **kwargs):
     return logging.getLogger(name)
 
 # Using Routes
-@hug.get("/post/")
+@hug.get("/posts/")
 def posts(db: sqlite):
     return {"post": db["post"].rows}
 
@@ -105,5 +105,16 @@ def postMessage(response, username: hug.directives.user, text: hug.types.text, d
         response.status = hug.falcon.HTTP_409
         return {"error": str(e)}
 
-    response.set_header("Location", "/post/")
+    response.set_header("Location", f"/posts/{post['id']}")
     return post
+
+''' Design the service of retrieving a specific post based on its ID '''
+@hug.get("/posts/{id}")
+def retrieve_post(response, id: hug.types.number, db:sqlite):
+    posts = []
+    try:
+        post = db["post"].get(id)
+        posts.append(post)
+    except sqlite_utils.db.NotFoundError:
+        response.status = hug.falcon.HTTP_404
+    return {"posts": posts}
