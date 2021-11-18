@@ -5,22 +5,28 @@
 
 # Professor: Kenytt Avery
 
-# Project 2: Microservice Implementation and Load Balancing
+# Project 3: Polyglot Persistence and Service Discovery
 
 ----------------------------------------------------------------------------------------------------
 
 ### SUMMARY ###
 
-- There are two main microservices built in this project, one for 'users' and one for 'timelines' to provide
-the services to users. With the 'users' services, users can register, follow/ unfollow each other, post messages, and change their information (i.e., password, bio). With the 'timelines' services, they can show users' posts that they have made, all posts from all users that this user followed, and all posts from all users. There are some services that require users to log in before using. 
+- There are two main microservices built in Project 2, one for 'users' and one for 'timelines' to provide
+the services to users. With the 'users' services, users can register, follow/ unfollow each other, post messages, and change their information (i.e., password, bio). With the 'timelines' services, they can show users' posts that they have made, all posts from all users that this user followed, and all posts from all users. There are some services that require users to log in before using.
 
-- For all new creations of a user or post, they will be stored in the database files. Each user created will have a username, a bio, an email address, and a password. Each post that a user creates will have the author's username, the text (content) of the post, and a timestamp.
+- For all new creations related to 'user' or 'post' services, they will be stored in the database files. Each user created will have a username, a bio, an email address, and a password. Each post that a user creates will have the author's username, the text (content) of the post, and a timestamp.
+
+- There are three new microservices added in this project, one for 'like', one for 'poll', and one for 'service_registry'. By using the 'like' services, users can like posts, view number of likes of a specfic post, get the list of posts they like, and see the top 5 popular posts that were liked by users. By using the 'poll' services, users can create a poll, vote a specific poll once, and view the result of polls even though they do not vote. With the 'service_registry', each service instance will be registered with their service name and a base URL for their endpoints.
+
+- For all new creations related to the 'like' services, they will be stored in the NoSQL database named "Redis. For all new creations of polls, they will be stored in the NoSQL database named "Amazon Dynamodb Local". Each poll created will have an id as a primary key, an author, a question, at least 2 responses and at most 4 responses, a 'voted_users' attribute that stores the information about voted users' username, and a 'voted_counts' attribute that stores the number of votes corresponding to each choice of a poll.
 
 - For production deployment, Gunicorn is used in this project as a WSGI server to run both microservices, and the program was designed to handle the running of multiple instances of the 'timeline' service by using HAProxy as an load balancer.
 
 ----------------------------------------------------------------------------------------------------
 
 ### MICROSERVICES - DETAILED DESCRIPTIONS ###
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 ## 'Users' Microservices ##
 
@@ -91,6 +97,8 @@ In the terminal, please command: $ http --verbose POST 127.0.0.1/unfollow/ @./sh
 - To use the service through the terminal, please use 'new_bio.json' as an example.
 In the terminal, please command: $ http --verbose PUT 127.0.0.1/update-bio/ @./share/new_bio.json
 
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
 ## 'Timelines' Microservices ##
 
 1. @hug.get("/post/")
@@ -131,20 +139,146 @@ To use the service through the terminal, please command: $ http --auth username:
 
 To use the service through the terminal, please command: $ http --auth username:password POST 127.0.0.1/message/ text="{The text of the post}"
 
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+## 'Poll' Microservices  ##
+
+1. @hug.post("/polls/create/", status=hug.falcon.HTTP_201)
+
+- This service allows any users to create a poll.
+
+- Endpoint: /polls/create/
+
+- HTTP Method: POST
+
+- HTTP Response Status Codes: 
+  + '201 Created' if successfully created by providing valid inputs.
+  + '400 Bad Request' if users provide invalid inputs.
+  + '409 Conflict' if an user attempts to create two polls with the same id.
+  
+- To use the service through the terminal, please use 'new_poll.json' as an example.
+In the terminal, please command: $ http --verbose PUT 127.0.0.1/polls/create/ @./share/new_poll.json
+
+Or, 
+
+In the terminal, please command: $ http POST 127.0.0.1/polls/create/ poll_id={id} created_by={username} question={"The text of a question of the poll"} poll_responses={"Option1, Option2, Option3, Option4"}
+
+2. @hug.put("/polls/vote/{id}")
+
+- This service allows any users to vote a specific poll.
+
+- Endpoint: /polls/vote/{id}
+
+- HTTP Method: PUT
+
+- HTTP Response Status Codes:
+  + '200 OK' if successfully voted by providing correct id and valid choice
+  + '400 Bad Request' if an users provided invalid choice to vote
+  + '404 Not Found' if an users provided incorrect id of the poll
+  + '409 Conflict' if an users attemps to vote the same poll twice
+  
+- To use the service through the terminal, please command: $ http PUT 127.0.0.1/polls/vote/{id} username={username} choice={valid_choice}
+
+3. @hug.get("/polls/view-result/{id}")
+
+- This service allows any users to view the result of a specific poll.
+
+- Endpoint: /polls/view-result/{id}
+
+- HTTP Method: GET
+
+- HTTP Response Status Codes:
+  + '200 OK' if successfully viewed the result by providing correct id
+  + '404 Not Found' if an user provided incorrect id of the poll
+  
+- To use the service in the browser, please type URL = "http://127.0.0.1/polls/view-result/{id}"
+
+- To use the service through the terminal, please command: $ http 127.0.0.1/polls/view-result/{id}
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+## 'Like' Microservices ##
+
+1. @hug.post("/like-post/{post_id}")
+
+- This service allows any users to like posts.
+
+- Endpoint: /like-post/{post_id}
+
+- HTTP Method: POST
+
+- HTTP Response Status Codes:
+  + '201 Created' if successfuly liked by providing valid inputs
+  + '404 Not Found' if an user attempts to like a non-existing post
+  
+- To use the service through the terminal, please command:
+
+2. @hug.get("/like-count/{post_id}")
+
+- This service allows any users to view number of likes of a specific post.
+
+- Endpoint: /like-count/{post_id}
+
+- HTTP Method: GET
+
+- HTTP Response Status Codes:
+  + '200 OK' if successfully viewed number of likes of a post by providing a valid id.
+  + '404 Not Found' if an user attempts to view number of likes of a non-existing post
+
+- To use the service in the browser, please type URL = "http://127.0.0.1/like-count/{post_id}
+
+- To use the service through the terminal, please command: $ http 127.0.0.1/like-count/{post_id}
+
+3. @hug.get("/user-liked/{username}")
+
+- This service allows users to see posts they liked.
+
+- Endpoint: /user-liked/{username}
+
+- HTTP Method: GET
+
+- HTTP Response Status Codes:
+  + '200 OK' if successfully saw posts that an user liked by providing a valid username
+  + ''
+  
+- To use the service in the browser, please type URL = "http://127.0.0.1/user-liked/{username}"
+
+- To use the service through the terminal, please command: $ http 127.0.0.1/user-liked/{username}
+
+4. @hug.get("/popular-posts/")
+
+- This service allows users to see top 5 popular posts that were liked by them or others.
+
+- Endpoint: /popular-posts/
+
+- HTTP Method: GET
+
+- HTTP Response Status Codes:
+  + '200 OK' if successfully see top 5 popular posts
+  
+- To use the service in the browser, please type URL = "http://127.0.0.1/popular-posts"
+
+- To use the service through the terminal, please command: $ http 127.0.0.1/popular-posts
+
 ----------------------------------------------------------------------------------------------------
 
 ### REQUIREMENTS ###
 
-- There are some tools and libraries needed to be installed before running the microservices:
+- There are some tools, libraries, and NoSQL databases needed to be installed before running the microservices:
 
    1. Hug
    2. sqlite-utils libraries
    3. HAProxy
    4. Gunicorn server
-
+   5. Amazon Dynamodb Local
+      Link to downdload: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DynamoDBLocal.DownloadingAndRunning.html
+   6. Redis
+   7. Python libraries for Redis
+   8. Boto3 library
+    
 ----------------------------------------------------------------------------------------------------
 
-### "CPSC-449-Project2.tar.gz" Contents ###
+### "CPSC-449-Project3.tar.gz" Contents ###
 
 1. README.txt				// This file
 
@@ -152,36 +286,45 @@ To use the service through the terminal, please command: $ http --auth username:
 
 3. user_services.py			// Containing the source code that executes the 'users' services
 
-4. Profile				// Containing The WSGI-compatible server (Gunicorn) to run both microservices
+4. poll_services.py			// Containing the source code that executes the 'poll' services
 
-5. .env					// Avoiding missing output from Foreman
+5. like_service.py			// Containing the source code that executes the 'like' services
 
-6. "var" folder				// Containing the log and database files
-   6.1. "log" folder			// Containing the log files of microservices
-      6.1.1. user_services.log		// Containing records of activities within the 'users' microservice
-      6.1.2. timelines_services.log	// Containing records of activities within the 'timelines' microservice
-   6.2. posts.db			// The database file that stores all users' posts
-   6.3. users.db			// The database file that stores all users' information and followings
+6. create_polls_table.py			// Containing the source code that executes the creation of 'polls' table in local Dynamodb
 
-7. "bin" folder				// Containing the shell files
-   7.1. init.sh				// The shell script that initializes all database files
-   7.2. posts.sh			// The shell script that run the specific command(s)
+7. Profile				// Containing The WSGI-compatible server (Gunicorn) to run both microservices
 
-8. "etc" folder				// Containing the configuration files related to two microservices
-   8.1. users_services.ini
-   8.2. timelines_services.ini
-   8.3. user_services_logging.ini
-   8.4. timelines_services_logging.ini
-   8.5. haproxy.cfg
+8. .env				// Avoiding missing output from Foreman
 
-9. "share" folder			// Containing the JSON and CSV files
-   9.1. new_bio.json
-   9.2. new_follow.json
-   9.3. new_password.json
-   9.4. new_user.json
-   9.5. following.csv
-   9.6. posts.csv
-   9.7. users.csv
+9. "var" folder			// Containing the log and database files
+   9.1. "log" folder			// Containing the log files of microservices
+      9.1.1. user_services.log		// Containing records of activities within the 'users' microservice
+      9.1.2. timelines_services.log	// Containing records of activities within the 'timelines' microservice
+   9.2. posts.db			// The database file that stores all users' posts
+   9.3. users.db			// The database file that stores all users' information and followings
+
+10. "bin" folder				// Containing the shell files
+   10.1. init.sh				// The shell script that initializes all database files
+   10.2. posts.sh			// The shell script that run the specific command(s)
+
+11. "etc" folder				// Containing the configuration files related to two microservices
+   11.1. users_services.ini
+   11.2. timelines_services.ini
+   11.3. user_services_logging.ini
+   11.4. timelines_services_logging.ini
+   11.5. like_service.ini
+   11.6. like_service_logging.ini
+   11.7. haproxy.cfg
+
+12. "share" folder			// Containing the JSON and CSV files
+   12.1. new_bio.json
+   12.2. new_follow.json
+   12.3. new_password.json
+   12.4. new_user.json
+   12.5. new_poll.json
+   12.6. following.csv
+   12.7. posts.csv
+   12.8. users.csv
 
 ----------------------------------------------------------------------------------------------------
 
@@ -203,15 +346,65 @@ $ python3 -m pip install hug sqlite-utils
 
 $ sudo apt install --yes haproxy gunicorn
 
-4. To load the database for the services, command:
+4. To install Redis, command:
 
-$ ./bin/init.sh
+$ sudo apt install --yes redis
 
-5. Please replace the content of 'haproxy.cfg' file in your system with the content of 'haproxy.cfg' in the "etc" folder.
+5. (Optional) To verify that Redis is installed and working, command:
+
+$ redis-cli ping
+
+Expected Output: PONG
+
+6. To install Python libraries for Redis, command:
+
+$ sudo apt install --yes python3-hiredis
+
+7. To install Boto3 library, command:
+
+$ sudo apt install --yes python3-boto3
+
+8. To install the AWS CLI to prepare for running aws configure, command on another terminal:
+
+$ sudo apt install --yes awscli
+
+9. Assume that you downloaded, extracted, and move the contents of Amazon Dynamodb to a location of your choice (if not, please see 'REQUIREMENTS' section), to set up Amazon Dynamodb locally, change the current directory to the one that contains "DynamoDB.jar", and command:
+
+$ java -Djava.library.path=./DynamoDBLocal_lib -jar DynamoDBLocal.jar -sharedDb
+
+Expected Output:
+
+Initializing DynamoDB Local with the following configuration:
+Port:	8000
+InMemory:	false
+DbPath:	null
+SharedDb:	true
+shouldDelayTransientStatuses:	false
+CorsParams:	* 
+
+10. To run aws configure, command and input:
+
+$ aws configure
+AWS Access Key ID [None]: fakeMyKeyId
+AWS Secret Access Key [None]: fakeSecretAccessKey
+Default region name [None]: us-west-2
+Default output format [None]: table
+
+11. To create 'polls' table stored in Dynamodb, command:
+
+$ python3 create_polls_table.py
+
+12. To load the database for the 'users' and 'posts' services, command:
+
+$ ./bin/init.sh 
+
+13. Please replace the content of 'haproxy.cfg' file in your system with the content of 'haproxy.cfg' in the "etc" folder.
    Then, to configure HAProxy to present as an HTTP load balancer, command:
 
 $ sudo systemctl start haproxy
 
-6. To start two microservices concurrently, command on another terminal:
+14. To start microservices concurrently, command on another terminal:
 
-$ foreman start --formation user_services=1,timelines_services=3
+$ foreman start --formation user_services=1,timelines_services=3, like_service=1, poll_services=1
+
+15. To begin using the services, please open another terminal and read 'MICROSERVICES - DETAILED DESCRIPTIONS' section for more detail.
