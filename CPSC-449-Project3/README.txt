@@ -271,7 +271,7 @@ In the terminal, please command: $ http POST 127.0.0.1/polls/create/ poll_id={id
    3. HAProxy
    4. Gunicorn server
    5. Amazon Dynamodb Local
-      Link to downdload: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DynamoDBLocal.DownloadingAndRunning.html
+      Link to download: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DynamoDBLocal.DownloadingAndRunning.html
    6. Redis
    7. Python libraries for Redis
    8. Boto3 library
