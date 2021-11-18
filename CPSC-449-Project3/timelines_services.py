@@ -117,4 +117,4 @@ def retrieve_post(response, id: hug.types.number, db:sqlite):
         posts.append(post)
     except sqlite_utils.db.NotFoundError:
         response.status = hug.falcon.HTTP_404
-    return {"posts": posts}
+    # return {"posts": posts}
