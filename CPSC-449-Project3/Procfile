@@ -1,2 +1,3 @@
 user_services: gunicorn --access-logfile - --capture-output user_services:__hug_wsgi__
 timelines_services: gunicorn --access-logfile - --capture-output timelines_services:__hug_wsgi__
+like_service: gunicorn --access-logfile - --capture-output like_service:__hug_wsgi__
