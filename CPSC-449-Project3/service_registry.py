@@ -7,9 +7,13 @@ import hug
 import configparser
 import logging.config
 import requests
+import time
+import threading
+import concurrent.futures
 import os
 import socket
 
+lock = threading.Lock()
 users = []
 posts = []
 likes = []
@@ -22,6 +26,49 @@ config.read("./etc/service_registry.ini")
 logging.config.fileConfig(config["logging"]["config"], disable_existing_loggers=False)
 # hug.API(__name__).http.serve(port=int(config["port"]["config"]))
 
+def health_check():
+    lock.acquire()
+    for i in users:
+        print("Checking", i)
+        res = requests.get(i)
+        if res.status_code != 200:
+            users.remove(i)
+            break;
+        else:
+            print(i, "is working ...")
+
+    for i in posts:
+        print("Checking", i)
+        res = requests.get(i)
+        if res.status_code != 200:
+            users.remove(i)
+            break;
+        else:
+            print(i, "is working ...")
+
+    for i in likes:
+        print("Checking", i)
+        res = requests.get(i)
+        if res.status_code != 200:
+            users.remove(i)
+            break;
+        else:
+            print(i, "is working ...")
+
+    for i in polls:
+        print("Checking", i)
+        res = requests.get(i)
+        if res.status_code != 200:
+            users.remove(i)
+        else:
+            print(i, "is working ...")
+    lock.release()
+
+@hug.startup()
+def startup(api=None):
+    myThread = threading.Thread(target=health_check, daemon=True)
+    myThread.start()
+    threading.Timer(10.0, startup).start()
 
 # Arguments to inject into route functions
 @hug.directive()

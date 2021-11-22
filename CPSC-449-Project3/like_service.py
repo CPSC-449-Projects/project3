@@ -79,5 +79,5 @@ def show_popular_posts(db: redisdb):
 
 ######## Health check ########
 @hug.get("/health-check/")
-def health_check():
-    return
+def health_check(response):
+    return response.status

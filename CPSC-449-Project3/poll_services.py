@@ -7,6 +7,15 @@ import boto3
 import json
 import configparser
 import logging.config
+import requests
+import os
+import socket
+
+@hug.startup()
+def register(api):
+    URL = "http://" + socket.getfqdn() + ":" + os.environ['PORT'] + "/health-check"
+    payload = {'service': 'polls', 'URL': URL}
+    requests.post(f'http://{socket.getfqdn()}:1234/register-instance/', data = payload)
 
 ''' Load Dynamodb locally '''
 dynamodb = boto3.resource('dynamodb', endpoint_url="http://localhost:8000")
@@ -152,3 +161,7 @@ def result(response, id: hug.types.number):
         response.status = hug.falcon.HTTP_404
         return {"error": "No Target Poll Found"}
     return poll
+
+@hug.get("/health-check/")
+def health_check(response):
+    return response.status
