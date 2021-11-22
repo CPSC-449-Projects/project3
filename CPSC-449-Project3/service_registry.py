@@ -20,7 +20,7 @@ polls = []
 config = configparser.ConfigParser()
 config.read("./etc/service_registry.ini")
 logging.config.fileConfig(config["logging"]["config"], disable_existing_loggers=False)
-hug.API(__name__).http.serve(port=int(config["port"]["config"]))
+# hug.API(__name__).http.serve(port=int(config["port"]["config"]))
 
 
 # Arguments to inject into route functions
@@ -67,3 +67,5 @@ def register_intances(request,response,
     except Exception as e:
         response.status = hug.falcon.HTTP_409
         return {"error": str(e)}
+
+hug.API(__name__).http.serve(port=1234)
