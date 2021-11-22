@@ -1,6 +1,6 @@
 # Members: Quang Nguyen, Vinh Tran
 # CPSC 449
-# Project 3: Polyglot Persistence and Service Discovery
+# Project 2: Microservice Implementation and Load Balancing
 
 
 import hug
@@ -9,14 +9,6 @@ import datetime
 import configparser
 import logging.config
 import requests
-import os
-import socket
-
-@hug.startup()
-def register(api):
-    URL = "http://" + socket.getfqdn() + ":" + os.environ['PORT'] + "/health-check"
-    payload = {'service': 'posts', 'URL': URL}
-    requests.post(f'http://{socket.getfqdn()}:1234/register-instance/', data = payload)
 
 # Load configuration
 #
@@ -125,9 +117,4 @@ def retrieve_post(response, id: hug.types.number, db:sqlite):
         posts.append(post)
     except sqlite_utils.db.NotFoundError:
         response.status = hug.falcon.HTTP_404
-    # return {"posts": posts}
-
-######## Health check ########
-@hug.get("/health-check/")
-def health_check():
-    return
+    return {"posts": posts}
