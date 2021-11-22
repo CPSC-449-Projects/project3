@@ -1,12 +1,20 @@
 # Members: Quang Nguyen, Vinh Tran
 # CPSC 449
-# Project 3:
+# Project 3: Polyglot Persistence and Service Discovery
 
 import hug
 import configparser
 import logging.config
 import requests
 import redis
+import os
+import socket
+
+@hug.startup()
+def register(api):
+    URL = "http://" + socket.getfqdn() + ":" + os.environ['PORT'] + "/health-check"
+    payload = {'service': 'likes', 'URL': URL}
+    r = requests.post(f'http://{socket.getfqdn()}:1234/register-instance/', data = payload)
 
 # Load configuration
 #
@@ -14,14 +22,12 @@ config = configparser.ConfigParser()
 config.read("./etc/like_service.ini")
 logging.config.fileConfig(config["logging"]["config"], disable_existing_loggers=False)
 
-redis = redis.Redis(host="localhost", port="6379")
-
 # Arguments to inject into route functions
 #
 @hug.directive()
-def sqlite(section="sqlite", key="dbfile", **kwargs):
-    dbfile = config[section][key]
-    return sqlite_utils.Database(dbfile)
+def redisdb(section="redis", key="port", **kwargs):
+    port = config[section][key]
+    return redis.Redis(host="localhost", port=port)
 
 @hug.directive()
 def log(name=__name__, **kwargs):
@@ -32,42 +38,46 @@ def log(name=__name__, **kwargs):
 @hug.post("/like-post/")
 def like_post(response,
     username: hug.types.text,
-    post_id: hug.types.number):
+    post_id: hug.types.number,
+    db: redisdb):
     r = requests.get(f'http://127.0.0.1/posts/{post_id}')
     if r.status_code != 200:
         response.status = hug.falcon.HTTP_404
     else:
-        if (redis.sismember(username, post_id) == False):
-            redis.sadd(username, post_id)
-            if (redis.exists(post_id) == 1):
-                redis.incrby(post_id, 1)
-                redis.zincrby('pposts', 1, post_id)
-                return
+        if (db.sismember(username, post_id) == False):
+            db.sadd(username, post_id)
+            if (db.exists(post_id) == 1):
+                db.incrby(post_id, 1)
+                db.zincrby('pposts', 1, post_id)
             else:
-                redis.set(post_id, '1')
-                redis.zadd('pposts', {post_id : 1})
-                return {1123}
+                db.set(post_id, '1')
+                db.zadd('pposts', {post_id : 1})
 
 
 ######## Show like of a post ########
 @hug.get("/like-count/{post_id}")
-def show_like_count(response, post_id: hug.types.number):
+def show_like_count(response, post_id: hug.types.number, db: redisdb):
     r = requests.get(f'http://127.0.0.1/posts/{post_id}')
     if r.status_code != 200:
         response.status = hug.falcon.HTTP_404
     else:
-        if (redis.exists(post_id) == 1):
-            return redis.get(post_id)
+        if (db.exists(post_id) == 1):
+            return db.get(post_id)
         else:
             return {"post": 0}
 
 ######## Show posts that user liked ########
 @hug.get("/user-liked/{username}")
-def show_user_liked(username: hug.types.text):
-    return redis.smembers(username)
+def show_user_liked(username: hug.types.text, db: redisdb):
+    return db.smembers(username)
 
 ######## Show popular posts ########
 @hug.get("/popular-posts/")
-def show_popular_posts():
-    posts = redis.zrange('pposts', 0, 4, desc=True, withscores=True)
+def show_popular_posts(db: redisdb):
+    posts = db.zrange('pposts', 0, 4, desc=True, withscores=True)
     return posts
+
+######## Health check ########
+@hug.get("/health-check/")
+def health_check():
+    return
