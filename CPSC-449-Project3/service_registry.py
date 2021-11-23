@@ -14,10 +14,18 @@ import os
 import socket
 
 lock = threading.Lock()
+'''
 users = []
 posts = []
 likes = []
 polls = []
+'''
+registered_services = {
+    "users": [],
+    "posts": [],
+    "likes": [],
+    "polls": []
+}
 
 # Load configuration
 #
@@ -28,6 +36,7 @@ logging.config.fileConfig(config["logging"]["config"], disable_existing_loggers=
 
 def health_check():
     lock.acquire()
+    '''
     for i in users:
         print("Checking", i)
         res = requests.get(i)
@@ -62,6 +71,23 @@ def health_check():
             users.remove(i)
         else:
             print(i, "is working ...")
+    '''
+
+    for i in registered_services:
+        for j in registered_services[i]:
+            print("[CHECKING]", j)
+            try:
+                res = requests.get(j)
+                if res.status_code != 200:
+                    registered_services[i].remove(j)
+                    break;
+            except requests.ConnectionError as e:
+                e = "Connection Failed"
+                print({"error": e})
+                registered_services[i].remove(j)
+                break;
+            print(j, res.status_code, "\n")
+
     lock.release()
 
 @hug.startup()
@@ -75,6 +101,7 @@ def startup(api=None):
 def log(name=__name__, **kwargs):
     return logging.getLogger(name)
 
+'''
 # Using Routes
 ######## Return all user service instances ########
 @hug.get("/users/")
@@ -95,6 +122,17 @@ def get_likes():
 @hug.get("/polls/")
 def get_polls():
     return polls[0:]
+'''
+
+@hug.get("/{service}/")
+def get_services(service: hug.types.text):
+    services = []
+    try:
+        for i in registered_services[service]:
+            services.append(i)
+    except Exception as e:
+        response.status = hug.falcon.HTTP_404
+    return services
 
 ######## Register service instance ########
 @hug.post("/register-instance/", status=hug.falcon.HTTP_201)
@@ -102,6 +140,7 @@ def register_intances(request,response,
     service: hug.types.text,
     URL: hug.types.text):
     try:
+        '''
         if (service == "users"):
             users.append(URL)
         elif (service == "posts"):
@@ -110,6 +149,8 @@ def register_intances(request,response,
             likes.append(URL)
         elif (service == "polls"):
             polls.append(URL)
+        '''
+        registered_services[service].append(URL)
 
     except Exception as e:
         response.status = hug.falcon.HTTP_409
