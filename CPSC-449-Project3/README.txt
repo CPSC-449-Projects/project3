@@ -20,7 +20,7 @@ the services to users. With the 'users' services, users can register, follow/ un
 
 - For all new creations related to the 'like' services, they will be stored in the NoSQL database named "Redis. For all new creations of polls, they will be stored in the NoSQL database named "Amazon Dynamodb Local". Each poll created will have an id as a primary key, an author, a question, at least 2 responses and at most 4 responses, a 'voted_users' attribute that stores the information about voted users' username, and a 'voted_counts' attribute that stores the number of votes corresponding to each choice of a poll.
 
-- For production deployment, Gunicorn is used in this project as a WSGI server to run both microservices, and the program was designed to handle the running of multiple instances of the 'timeline' service by using HAProxy as an load balancer.
+- For production deployment, Gunicorn is used in this project as a WSGI server to run microservices, and the program was designed to handle the running of multiple instances of the 'timeline' service by using HAProxy as an load balancer.
 
 ----------------------------------------------------------------------------------------------------
 
