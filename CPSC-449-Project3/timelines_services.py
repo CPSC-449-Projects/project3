@@ -14,7 +14,7 @@ import socket
 
 @hug.startup()
 def register(api):
-    URL = "http://" + socket.getfqdn() + ":" + os.environ['PORT'] + "/health-check"
+    URL = "http://" + socket.getfqdn() + ":" + os.environ['PORT']
     payload = {'service': 'posts', 'URL': URL}
     requests.post(f'http://{socket.getfqdn()}:1234/register-instance/', data = payload)
 
