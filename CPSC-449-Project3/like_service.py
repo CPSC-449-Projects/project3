@@ -10,17 +10,17 @@ import redis
 import os
 import socket
 
-@hug.startup()
-def register(api):
-    URL = "http://" + socket.getfqdn() + ":" + os.environ['PORT']
-    payload = {'service': 'likes', 'URL': URL}
-    r = requests.post(f'http://{socket.getfqdn()}:1234/register-instance/', data = payload)
-
 # Load configuration
 #
 config = configparser.ConfigParser()
 config.read("./etc/like_service.ini")
 logging.config.fileConfig(config["logging"]["config"], disable_existing_loggers=False)
+
+@hug.startup()
+def register(api):
+    URL = "http://" + socket.getfqdn() + ":" + os.environ['PORT']
+    payload = {'service': 'likes', 'URL': URL}
+    requests.post(config["registry"]["URL"]+"/register-instance/", data = payload)
 
 # Arguments to inject into route functions
 #
@@ -40,31 +40,23 @@ def like_post(response,
     username: hug.types.text,
     post_id: hug.types.number,
     db: redisdb):
-    r = requests.get(f'http://127.0.0.1/posts/{post_id}')
-    if r.status_code != 200:
-        response.status = hug.falcon.HTTP_404
-    else:
-        if (db.sismember(username, post_id) == False):
-            db.sadd(username, post_id)
-            if (db.exists(post_id) == 1):
-                db.incrby(post_id, 1)
-                db.zincrby('pposts', 1, post_id)
-            else:
-                db.set(post_id, '1')
-                db.zadd('pposts', {post_id : 1})
+    if (db.sismember(username, post_id) == False):
+        db.sadd(username, post_id)
+        if (db.exists(post_id) == 1):
+            db.incrby(post_id, 1)
+            db.zincrby('pposts', 1, post_id)
+        else:
+            db.set(post_id, '1')
+            db.zadd('pposts', {post_id : 1})
 
 
 ######## Show like of a post ########
 @hug.get("/like-count/{post_id}")
 def show_like_count(response, post_id: hug.types.number, db: redisdb):
-    r = requests.get(f'http://127.0.0.1/posts/{post_id}')
-    if r.status_code != 200:
-        response.status = hug.falcon.HTTP_404
+    if (db.exists(post_id) == 1):
+        return db.get(post_id)
     else:
-        if (db.exists(post_id) == 1):
-            return db.get(post_id)
-        else:
-            return {"post": 0}
+        return {"post": 0}
 
 ######## Show posts that user liked ########
 @hug.get("/user-liked/{username}")

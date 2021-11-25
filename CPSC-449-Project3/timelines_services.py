@@ -12,17 +12,18 @@ import requests
 import os
 import socket
 
-@hug.startup()
-def register(api):
-    URL = "http://" + socket.getfqdn() + ":" + os.environ['PORT']
-    payload = {'service': 'posts', 'URL': URL}
-    requests.post(f'http://{socket.getfqdn()}:1234/register-instance/', data = payload)
 
 # Load configuration
 #
 config = configparser.ConfigParser()
 config.read("./etc/timelines_services.ini")
 logging.config.fileConfig(config["logging"]["config"], disable_existing_loggers=False)
+
+@hug.startup()
+def register(api):
+    URL = "http://" + socket.getfqdn() + ":" + os.environ['PORT']
+    payload = {'service': 'posts', 'URL': URL}
+    requests.post(config["registry"]["URL"]+"/register-instance/", data = payload)
 
 
 # Arguments to inject into route functions
@@ -64,7 +65,10 @@ def retrievePublicTimeline(response, db: sqlite):
     return {"post": posts}
 
 def check_user(username, password):
-    r = requests.get(f'http://127.0.0.1/login?username={username}&password={password}')
+    r1 = requests.get(config["registry"]["URL"]+"/users")
+    service_URL = r1.json()
+    payload={'username': username, 'password': password}
+    r2 = requests.get(service_URL[0]+"/login", params=payload)
     if r.status_code == 200:
         return username
 
@@ -78,7 +82,10 @@ def retrieveHomeTimeline(response, username: hug.types.text, user: hug.directive
         return {"error": f"You are unauthorized to access the home timeline of {username}."}
 
     follows = []
-    list_of_followings = requests.get(f'http://127.0.0.1/get-following/{username}')
+    r1 = requests.get(config["registry"]["URL"]+"/users")
+    service_URL = r1.json()
+    payload={'username': username, 'password': password}
+    list_of_followings = requests.get(service_URL[0]+"/get-following", params=payload)
     list_of_followings = list_of_followings.json()
 
     for following in list_of_followings["follows"]:

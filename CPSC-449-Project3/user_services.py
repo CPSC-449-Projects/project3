@@ -11,17 +11,17 @@ import requests
 import os
 import socket
 
-@hug.startup()
-def register(api):
-    URL = "http://" + socket.getfqdn() + ":" + os.environ['PORT']
-    payload = {'service': 'users', 'URL': URL}
-    requests.post(f'http://{socket.getfqdn()}:1234/register-instance/', data = payload)
-
 # Load configuration
 #
 config = configparser.ConfigParser()
 config.read("./etc/user_services.ini")
 logging.config.fileConfig(config["logging"]["config"], disable_existing_loggers=False)
+
+@hug.startup()
+def register(api):
+    URL = "http://" + socket.getfqdn() + ":" + os.environ['PORT']
+    payload = {'service': 'users', 'URL': URL}
+    requests.post(config["registry"]["URL"]+"/register-instance/", data = payload)
 
 
 # Arguments to inject into route functions

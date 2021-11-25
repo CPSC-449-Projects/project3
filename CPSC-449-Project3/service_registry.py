@@ -14,12 +14,6 @@ import os
 import socket
 
 lock = threading.Lock()
-'''
-users = []
-posts = []
-likes = []
-polls = []
-'''
 registered_services = {
     "users": [],
     "posts": [],
@@ -90,5 +84,3 @@ def register_intances(request,response,
     except Exception as e:
         response.status = hug.falcon.HTTP_409
         return {"error": str(e)}
-
-hug.API(__name__).http.serve(port=1234)

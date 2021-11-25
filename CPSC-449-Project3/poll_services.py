@@ -11,11 +11,7 @@ import requests
 import os
 import socket
 
-@hug.startup()
-def register(api):
-    URL = "http://" + socket.getfqdn() + ":" + os.environ['PORT']
-    payload = {'service': 'polls', 'URL': URL}
-    requests.post(f'http://{socket.getfqdn()}:1234/register-instance/', data = payload)
+
 
 ''' Load Dynamodb locally '''
 dynamodb = boto3.resource('dynamodb', endpoint_url="http://localhost:8000")
@@ -25,6 +21,12 @@ table = dynamodb.Table('polls')
 config = configparser.ConfigParser()
 config.read("./etc/poll_services.ini")
 logging.config.fileConfig(config["logging"]["config"], disable_existing_loggers=False)
+
+@hug.startup()
+def register(api):
+    URL = "http://" + socket.getfqdn() + ":" + os.environ['PORT']
+    payload = {'service': 'poll', 'URL': URL}
+    requests.post(config["registry"]["URL"]+"/register-instance/", data = payload)
 
 ''' Arguments to inject into route functions '''
 @hug.directive()
