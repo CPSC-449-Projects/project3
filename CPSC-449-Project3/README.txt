@@ -14,11 +14,11 @@
 - There are two main microservices built in Project 2, one for 'users' and one for 'timelines' to provide
 the services to users. With the 'users' services, users can register, follow/ unfollow each other, post messages, and change their information (i.e., password, bio). With the 'timelines' services, they can show users' posts that they have made, all posts from all users that this user followed, and all posts from all users. There are some services that require users to log in before using.
 
-- For all new creations related to 'user' or 'post' services, they will be stored in the database files. Each user created will have a username, a bio, an email address, and a password. Each post that a user creates will have the author's username, the text (content) of the post, and a timestamp.
+- For all new creations related to 'user' or 'post' services, they will be stored in the database files. Each user created will have a username, a bio, an email address, and a password. Each post that a user creates will have an id, the author's username, the text (content) of the post, and a timestamp.
 
-- There are three new microservices added in this project, one for 'like', one for 'poll', and one for 'service_registry'. By using the 'like' services, users can like posts, view number of likes of a specfic post, get the list of posts they like, and see the top 5 popular posts that were liked by users. By using the 'poll' services, users can create a poll, vote a specific poll once, and view the result of polls even though they do not vote. With the 'service_registry', each service instance will be registered with their service name and a base URL for their endpoints.
+- There are three new microservices added in this project, one for 'like', one for 'poll', and one for 'service_registry'. By using the 'like' services, users can like posts, view number of likes of a specfic post, get the list of posts that they like, and see the top 5 popular posts that were liked by users. By using the 'poll' services, users can create a poll, vote a specific poll once, and view the result of polls even though they do not vote. With the 'service_registry', each service instance will be registered with their service name and a base URL for their endpoints. Moreover, a service instance can retrieve available instances of another service.
 
-- For all new creations related to the 'like' services, they will be stored in the NoSQL database named "Redis. For all new creations of polls, they will be stored in the NoSQL database named "Amazon Dynamodb Local". Each poll created will have an id as a primary key, an author, a question, at least 2 responses and at most 4 responses, a 'voted_users' attribute that stores the information about voted users' username, and a 'voted_counts' attribute that stores the number of votes corresponding to each choice of a poll.
+- For all new creations related to the 'like' services, they will be stored in the NoSQL database named Redis. For likes database, strings will be used to store the post_id (key) and number of likes, set will be use to store the username (key) and a set of liked posts, sorted set will be used to store the post_id (key) and number of likes. The reason for using strings and sorted set to store the post_id and number of likes is because it's easier to retrieve the data with strings, but it's easier to use the sorted set for retreiving a list of posts in order. For all new creations of polls, they will be stored in the NoSQL database named "Amazon Dynamodb Local". Each poll created will have an id as a primary key, an author, a question, at least 2 responses and at most 4 responses, a 'voted_users' attribute that stores the information about voted users' username, and a 'voted_counts' attribute that stores the number of votes corresponding to each choice of a poll.
 
 - For production deployment, Gunicorn is used in this project as a WSGI server to run microservices, and the program was designed to handle the running of multiple instances of the 'timeline' service by using HAProxy as an load balancer.
 
@@ -199,19 +199,18 @@ In the terminal, please command: $ http POST 127.0.0.1/polls/create/ poll_id={id
 
 ## 'Like' Microservices ##
 
-1. @hug.post("/like-post/{post_id}")
+1. @hug.post("/like-post/")
 
-- This service allows any users to like posts.
+- This service allows any users to like a post.
 
-- Endpoint: /like-post/{post_id}
+- Endpoint: /like-post
 
 - HTTP Method: POST
 
 - HTTP Response Status Codes:
-  + '201 Created' if successfuly liked by providing valid inputs
-  + '404 Not Found' if an user attempts to like a non-existing post
+  + '201 Created' when successfuly increase the # of likes of the post by 1, and add the post_id to the set of posts that user liked
   
-- To use the service through the terminal, please command:
+- To use the service through the terminal, please command: http 127.0.0.1:5200/like-post username={username} post_id={post_id}
 
 2. @hug.get("/like-count/{post_id}")
 
@@ -223,27 +222,25 @@ In the terminal, please command: $ http POST 127.0.0.1/polls/create/ poll_id={id
 
 - HTTP Response Status Codes:
   + '200 OK' if successfully viewed number of likes of a post by providing a valid id.
-  + '404 Not Found' if an user attempts to view number of likes of a non-existing post
 
-- To use the service in the browser, please type URL = "http://127.0.0.1/like-count/{post_id}
+- To use the service in the browser, please type URL = "http://127.0.0.1:5200/like-count/{post_id}
 
-- To use the service through the terminal, please command: $ http 127.0.0.1/like-count/{post_id}
+- To use the service through the terminal, please command: $ http 127.0.0.1:5200/like-count/{post_id}
 
 3. @hug.get("/user-liked/{username}")
 
-- This service allows users to see posts they liked.
+- This service allows users to see posts that they or other people liked.
 
 - Endpoint: /user-liked/{username}
 
 - HTTP Method: GET
 
 - HTTP Response Status Codes:
-  + '200 OK' if successfully saw posts that an user liked by providing a valid username
-  + ''
+  + '200 OK' if successfully return the number of posts that user liked
   
-- To use the service in the browser, please type URL = "http://127.0.0.1/user-liked/{username}"
+- To use the service in the browser, please type URL = "http://127.0.0.1:5200/user-liked/{username}"
 
-- To use the service through the terminal, please command: $ http 127.0.0.1/user-liked/{username}
+- To use the service through the terminal, please command: $ http 127.0.0.1:5200/user-liked/{username}
 
 4. @hug.get("/popular-posts/")
 
@@ -256,9 +253,9 @@ In the terminal, please command: $ http POST 127.0.0.1/polls/create/ poll_id={id
 - HTTP Response Status Codes:
   + '200 OK' if successfully see top 5 popular posts
   
-- To use the service in the browser, please type URL = "http://127.0.0.1/popular-posts"
+- To use the service in the browser, please type URL = "http://127.0.0.1:5200/popular-posts"
 
-- To use the service through the terminal, please command: $ http 127.0.0.1/popular-posts
+- To use the service through the terminal, please command: $ http 127.0.0.1:5200/popular-posts
 
 ----------------------------------------------------------------------------------------------------
 
@@ -314,7 +311,11 @@ In the terminal, please command: $ http POST 127.0.0.1/polls/create/ poll_id={id
    11.4. timelines_services_logging.ini
    11.5. like_service.ini
    11.6. like_service_logging.ini
-   11.7. haproxy.cfg
+   11.7. poll_services.ini
+   11.8. poll_services_logging.ini
+   11.9. service_registry.ini
+   11.10. service_registry_logging.ini
+   11.11. haproxy.cfg
 
 12. "share" folder			// Containing the JSON and CSV files
    12.1. new_bio.json
