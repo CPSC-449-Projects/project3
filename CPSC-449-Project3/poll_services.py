@@ -25,7 +25,7 @@ logging.config.fileConfig(config["logging"]["config"], disable_existing_loggers=
 @hug.startup()
 def register(api):
     URL = "http://" + socket.getfqdn() + ":" + os.environ['PORT']
-    payload = {'service': 'poll', 'URL': URL}
+    payload = {'service': 'polls', 'URL': URL}
     requests.post(config["registry"]["URL"]+"/register-instance/", data = payload)
 
 ''' Arguments to inject into route functions '''

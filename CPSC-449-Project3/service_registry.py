@@ -51,7 +51,6 @@ def health_check():
                         registered_services[i].remove(j)
                     print(f'[CONNECTION FAILED] {j}')
                     print(f'[REMOVED] {j}\n')
-                    print(registered_services[i])
         time.sleep(5)
 
 @hug.startup()

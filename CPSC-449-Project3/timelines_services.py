@@ -67,25 +67,38 @@ def retrievePublicTimeline(response, db: sqlite):
 def check_user(username, password):
     r1 = requests.get(config["registry"]["URL"]+"/users")
     service_URL = r1.json()
+
+    # Check if the users service is working
+    # If not, return HTTP Status Code = 502 as Bad Gateway
+    if len(service_URL) == 0:
+        return 502
+
     payload={'username': username, 'password': password}
     r2 = requests.get(service_URL[0]+"/login", params=payload)
-    if r.status_code == 200:
+    if r2.status_code == 200:
         return username
 
 authentication=hug.authentication.basic(check_user)
 
 ''' Design the service of home timeline '''
 @hug.get("/homeTimeline/{username}", requires=authentication)
-def retrieveHomeTimeline(response, username: hug.types.text, user: hug.directives.user, db: sqlite):
-    if username != user:
+def retrieveHomeTimeline(response, username: hug.types.text, info: hug.directives.user, db: sqlite):
+    # Check the return value of 'info'
+    # If 'info' has a value of 502 as HTTP Status Code.
+    # That means the users service is not ready. Then show the error as 502 Bad Gateway
+    # If 'info' has a value of a username of an user. Then compare it with an user's input
+    if info == 502:
+        response.status = hug.falcon.HTTP_502
+        return {'error': '502 Bad Gateway'}
+    elif username != info:
         response.status = hug.falcon.HTTP_404
         return {"error": f"You are unauthorized to access the home timeline of {username}."}
 
     follows = []
     r1 = requests.get(config["registry"]["URL"]+"/users")
     service_URL = r1.json()
-    payload={'username': username, 'password': password}
-    list_of_followings = requests.get(service_URL[0]+"/get-following", params=payload)
+
+    list_of_followings = requests.get(service_URL[0]+f'/get-following/{username}')
     list_of_followings = list_of_followings.json()
 
     for following in list_of_followings["follows"]:
