@@ -213,7 +213,7 @@ In the terminal, please command: $ http --verbose POST 127.0.0.1:5400/polls/crea
 
 Or,
 
-In the terminal, please command: $ http POST 127.0.0.1/polls/create/ poll_id={id} created_by={username} question={"The text of a question of the poll"} poll_responses={"Option1, Option2, Option3, Option4"}
+In the terminal, please command: $ http POST 127.0.0.1:5400/polls/create/ poll_id={id} created_by={username} question={"The text of a question of the poll"} poll_responses={"Option1, Option2, Option3, Option4"}
 
 3. @hug.put("/polls/vote/{id}")
 
@@ -290,7 +290,7 @@ In the terminal, please command: $ http POST 127.0.0.1/polls/create/ poll_id={id
 - HTTP Response Status Codes:
   + '200 OK' if successfully viewed number of likes of a post by providing a valid id.
 
-- To use the service in the browser, please type URL = "http://127.0.0.1:5300/like-count/{post_id}
+- To use the service in the browser, please type URL = "http://127.0.0.1:5300/like-count/{post_id}"
 
 - To use the service through the terminal, please command: $ http 127.0.0.1:5300/like-count/{post_id}
 
@@ -385,9 +385,10 @@ In the terminal, please command: $ http POST 127.0.0.1/polls/create/ poll_id={id
    4. Gunicorn server
    5. Amazon Dynamodb Local
       Link to downdload: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DynamoDBLocal.DownloadingAndRunning.html
-   6. Redis
-   7. Python libraries for Redis
-   8. Boto3 library
+   6. AWS CLI
+   7. Redis
+   8. Python libraries for Redis
+   9. Boto3 library
 
 ----------------------------------------------------------------------------------------------------
 
@@ -415,6 +416,8 @@ In the terminal, please command: $ http POST 127.0.0.1/polls/create/ poll_id={id
    10.1. "log" folder			// Containing the log files of microservices
       10.1.1. user_services.log		// Containing records of activities within the 'users' microservice
       10.1.2. timelines_services.log	// Containing records of activities within the 'timelines' microservice
+      10.1.3. poll_services.log	// Containing records of activities within the 'poll' microservice
+      10.1.4. service_registry.log	// Containing records of activities within the 'like' microservice
    10.2. posts.db			// The database file that stores all users' posts
    10.3. users.db			// The database file that stores all users' information and followings
 
